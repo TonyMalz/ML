@@ -1,5 +1,7 @@
 
 import pandas as pd
+import networkx as nx
+import matplotlib.pyplot as plt
 from math import log
 
 data = pd.read_csv("test.csv")
@@ -23,7 +25,7 @@ def infoGain(ds,col):
 	attrs = ds[col].value_counts()
 	num_attrs = attrs.sum()
 	gain = 0
-	print("Info Gain Column:", col)
+	print("calc info gain attribute:", col)
 	for i in range(0,len(attrs)):
 		label = attrs.index[i]
 		count = attrs[i]
@@ -38,36 +40,34 @@ def infoGain(ds,col):
 	#print("=>", igain)
 	return igain
 
-
-def ID3(ds, processedCols = []):
+def ID3(examples, target, attributes = []):
 	# check target
-	if entropy(ds[target].value_counts()) == 0. :
-		print('Done. => Target:', ds[target].value_counts().index[0])
-		return
+	if entropy(examples[target].value_counts()) == 0. :
+		nLabel = examples[target].value_counts().index[0]
+		print('Done. => Target:', examples[target].value_counts().index[0])
+		return 
+	if len(attributes) == 0:
+		d = examples[target].value_counts().to_dict()
+		# sort by frequency desc, then alphabetical asc
+		mostFreqValue = sorted(d.items(), key=lambda x: (-x[1], x[0]))[0][0]
+		print("No more attributes, most frequent value: ", mostFreqValue)
+		return 
 
-	# calculate information gain for remaining columns
+	# calculate information gain for remaining attributes
 	a = []
-	for col in ds.columns:
-		if col == target or col in processedCols:
-			continue
-		a.append((col,infoGain(ds, col)))
+	for col in attributes:
+		a.append((col,infoGain(examples, col)))
 
-	if len(a) == 0:
-		print("No more columns left to process")
-		return
-	
 	# sort by infogain, then alphabetical
 	sorted(a, key=lambda x: (x[1],x[0]) )
 	
 	best_col = a[0][0]
-	print('best column: =>', best_col)
-	processedCols.append(best_col)
+	print('best attribute: =>', best_col)
+	attributes.remove(best_col)
+	
+	# split on each value
+	for val in examples[best_col].value_counts().index:
+		print("\nSplit on value:", val)
+		ID3(examples[examples[best_col] == val],target, attributes.copy())
 
-	# split on each attribute
-	for attr in ds[best_col].value_counts().index:
-		print("\nSplit on attribute:", attr)
-		ID3(ds[ds[best_col] == attr],processedCols.copy())
-
-
-ID3(data)
-
+ID3(data,target,[x for x in data.columns if x != target])
