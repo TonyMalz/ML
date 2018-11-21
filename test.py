@@ -1,7 +1,5 @@
 
 import pandas as pd
-import networkx as nx
-import matplotlib.pyplot as plt
 from math import log
 
 data = pd.read_csv("test.csv")
