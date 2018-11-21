@@ -40,18 +40,31 @@ def infoGain(ds,col):
 	#print("=>", igain)
 	return igain
 
+class Node():
+	def __init__(self):
+		self.label = ''
+		self.isLeaf = True
+		self.infoGain = -1
+		self.childs = []
+
+	def __repr__(self):
+		return str(self.__dict__)
+		
+
 def ID3(examples, target, attributes = []):
+	node = Node()
 	# check target
 	if entropy(examples[target].value_counts()) == 0. :
-		nLabel = examples[target].value_counts().index[0]
-		print('Done. => Target:', examples[target].value_counts().index[0])
-		return 
+		node.label = examples[target].value_counts().index[0]
+		print('Done. => Target:', node.label)
+		return node
+	
 	if len(attributes) == 0:
 		d = examples[target].value_counts().to_dict()
 		# sort by frequency desc, then alphabetical asc
-		mostFreqValue = sorted(d.items(), key=lambda x: (-x[1], x[0]))[0][0]
-		print("No more attributes, most frequent value: ", mostFreqValue)
-		return 
+		node.label = sorted(d.items(), key=lambda x: (-x[1], x[0]))[0][0]
+		print("No more attributes, most frequent value: ", node.label)
+		return node
 
 	# calculate information gain for remaining attributes
 	a = []
@@ -65,9 +78,18 @@ def ID3(examples, target, attributes = []):
 	print('best attribute: =>', best_col)
 	attributes.remove(best_col)
 	
+	node.label = best_col
+	node.infoGain = a[0][1]
+	node.isLeaf = False
+
 	# split on each value
 	for val in examples[best_col].value_counts().index:
 		print("\nSplit on value:", val)
-		ID3(examples[examples[best_col] == val],target, attributes.copy())
+		child = ID3(examples[examples[best_col] == val],target, attributes.copy())
+		node.childs.append((val,child))
 
-ID3(data,target,[x for x in data.columns if x != target])
+	return node
+
+root = ID3(data,target,[x for x in data.columns if x != target])
+
+print('\nRoot object:', root)
